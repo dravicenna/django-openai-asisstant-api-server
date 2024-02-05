@@ -1,0 +1,39 @@
+[tool.poetry]
+name = "django-openai-assistant-framework"
+version = "0.1.0"
+description = ""
+authors = ["Vitaly Bobin <vetbobin@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+Django = "^5.0.1"
+python-dotenv = "^1.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 119
+extend-select = [
+  'Q',      # single quote over double quotes
+  'UP',     # Pyupgrade
+  'I',      # isort
+  'RUF100', # Ruff
+  'C90',    # Too complex. See mccabe below
+  # 'D',      # pydocstyle
+]
+# E501 is handled by black
+ignore = ['D104', 'D105', 'D107', 'D205', 'D415', 'E501']
+flake8-quotes = { inline-quotes = 'single', multiline-quotes = 'double' }
+mccabe = { max-complexity = 14 }
+target-version = "py311"
+
+[tool.black]
+color = true
+line-length = 119
+target-version = ["py311"]
+skip-string-normalization = true
+exclude = "'"
