@@ -10,7 +10,13 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
+import os
 from pathlib import Path
+
+import dj_database_url
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,9 +29,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-0s8qb$8!jlluc(b3x^7^er$yqe!yg0&mdv^zp)9+zthib6+s)('
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+if os.environ.get('DJANGO_DEBUG', default=False) in ['True', 'true', '1', True]:
+    DEBUG = True
+else:
+    DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    '*',
+]  # since Telegram uses a lot of IPs for webhooks
 
 
 # Application definition
@@ -49,6 +60,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'assistant.urls'
 
@@ -69,16 +82,13 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'assistant.wsgi.application'
-
+ASGI_APPLICATION = 'assistant.asgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(conn_max_age=600, default='sqlite:///db.sqlite3'),
 }
 
 
@@ -122,3 +132,19 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+ASSISTANT_ID = os.environ.get('ASSISTANT_ID', '')
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+CUSTOM_API_KEY = os.environ.get('CUSTOM_API_KEY')
+TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '')
+
+# Celery settings
+
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', '')
+
+#: Only add pickle to this list if your broker is secured
+#: from unwanted access (see userguide/security.html)
+CELERY_ACCEPT_CONTENT = ['json']
+# CELERY_RESULT_BACKEND = 'db+sqlite:///results.sqlite'
+CELERY_RESULT_BACKEND = CELERY_BROKER_URL
+CELERY_TASK_SERIALIZER = 'json'
