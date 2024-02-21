@@ -61,28 +61,29 @@ def cancel(message):
 
 @bot.message_handler(func=lambda message: True)
 def echo_all(message):
-    u = TelegramUser.get_user(message)
-    chat_id = message.chat.id
-    user_input = message.text
+    try:
+        u = TelegramUser.get_user(message)
+        chat_id = message.chat.id
+        user_input = message.text
 
-    if not u.thread:
-        thread = assistant.client.beta.threads.create()
-        u.thread = Thread.objects.create(thread_id=thread.id)
-        u.save()
-        logging.info(f'New thread created with ID: {thread.id}')
+        if not u.thread:
+            thread = assistant.client.beta.threads.create()
+            u.thread = Thread.objects.create(thread_id=thread.id)
+            u.save()
+            logging.info(f'New thread created with ID: {thread.id}')
 
-    thread_id = u.thread.thread_id
-    logging.info(f'thread {thread_id} message: {user_input}')
-    bot.send_chat_action(chat_id=chat_id, action='typing', timeout=5)
-    response = assistant.get_answer(thread_id=thread_id, user_input=user_input)
+        thread_id = u.thread.thread_id
+        logging.info(f'thread {thread_id} message: {user_input}')
+        bot.send_chat_action(chat_id=chat_id, action='typing', timeout=10)
+        response = assistant.get_answer(thread_id=thread_id, user_input=user_input, platform='telegram')
+        try:
+            bot.send_message(chat_id, response, parse_mode='Markdown')
+        except BaseException:
+            bot.send_message(chat_id, response, parse_mode='HTML')
 
-    # Use the original Telegram chat ID here, not the OpenAI thread ID
-    bot.send_message(chat_id, response, parse_mode='Markdown')
-
-    # # Start polling in a separate thread
-    # from threading import Thread
-
-    # Thread(target=bot.polling).start()
+    except BaseException as e:
+        bot.send_message(chat_id, 'Something broken inside me. Please try again', parse_mode='HTML')
+        raise e
 
 
 @shared_task
@@ -96,8 +97,3 @@ class StartTelegramView(View):
     def post(self, request, *args, **kwargs):
         process_update.delay(json.loads(request.body))
         return JsonResponse({'ok': 'POST'})
-        # if core_functions.check_api_key(request):
-        #     # TODO add to DB
-        #     thread = assistant.client.beta.threads.create()
-        #     logging.info(f'New thread created with ID: {thread.id}')
-        #     return JsonResponse({'thread_id': thread.id})
